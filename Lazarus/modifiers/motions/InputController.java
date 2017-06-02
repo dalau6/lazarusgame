@@ -1,0 +1,114 @@
+package Lazarus.modifiers.motions;
+
+import java.awt.Component;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
+import java.lang.reflect.Method;
+import java.lang.reflect.Field;
+import java.util.Observable;
+
+import Lazarus.LazarusWorld;
+import Lazarus.game.PlayerShip;
+
+
+public class InputController extends MotionController implements KeyListener{
+	Field field;
+	Method action;
+	int moveState;
+	int[] keys;
+	boolean player;
+	
+	public InputController(PlayerShip player){
+		this(player, new int[] {KeyEvent.VK_LEFT, KeyEvent.VK_RIGHT});
+		moveState = 0;
+		this.player = true;
+	}
+	
+	public InputController(PlayerShip player, int[] keys){
+		this(player, keys, LazarusWorld.getInstance());
+
+	}
+	
+	public InputController(PlayerShip player, int[] keys, Component world){
+		this.addObserver(player);
+		this.action = null;
+		this.field = null;
+		this.keys = keys;
+	
+		world.addKeyListener(this);
+	}
+	
+	public void signalKeyPress(KeyEvent e){
+
+	}
+	
+	private void setMove(String direction) {
+		try{
+			field = PlayerShip.class.getDeclaredField(direction);
+			moveState=1;
+			this.setChanged();
+		} catch (Exception e){e.printStackTrace();}
+		notifyObservers();
+	}
+	
+	private void unsetMove(String direction) {
+		try{
+			field = PlayerShip.class.getDeclaredField(direction);
+			moveState = 0;
+			this.setChanged();
+		} catch (Exception e){e.printStackTrace();}
+		notifyObservers();
+	}
+
+	public void read(Object theObject) {
+		PlayerShip player = (PlayerShip) theObject;
+		
+		try{
+			field.setInt(player, moveState);
+		} catch (Exception e) {
+			//e.printStackTrace();
+			try {
+				action.invoke(player);
+			} catch (Exception e2) {}
+		}
+	}
+	
+	public void clearChanged(){
+		super.clearChanged();
+	}
+
+	@Override
+	public void update(Observable o, Object arg) {
+	}
+	
+    public void keyPressed(KeyEvent e) {
+		int code = e.getKeyCode();
+		// left
+		if(code==keys[0]) {
+			this.setMove("left");
+		}
+		// right
+		else if(code==keys[2]) {
+			this.setMove("right");
+		}
+		setChanged();
+		this.notifyObservers();
+    }
+    
+    public void keyReleased(KeyEvent e) {
+		int code = e.getKeyCode();
+		if(code==keys[0]) {		//
+			this.unsetMove("left");
+		}
+		else if(code==keys[2]) {
+			this.unsetMove("right");
+		}
+		setChanged();
+		this.notifyObservers();
+    }
+
+	@Override
+	public void keyTyped(KeyEvent e) {
+		// TODO Auto-generated method stub
+	}
+}
